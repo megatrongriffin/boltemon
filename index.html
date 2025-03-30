@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Battle Mode Game</title>
+    <style>
+        /* Scoped styles to prevent interference from other stylesheets */
+        body#game-body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+            overflow: hidden;
+        }
+        div#game-container {
+            width: 100%;
+            height: 100%;
+        }
+        canvas#game-canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body id="game-body">
+    <div id="game-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script>
+        // Start Scene
+        class StartScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'StartScene' });
+            }
+
+            preload() {
+                // Preload all images
+                this.load.image('titlebg', 'assets/titlebg.png');
+                this.load.image('battlebg', 'assets/battlebg.jpg');
+                this.load.image('floor', 'assets/floor.png');
+                this.load.image('floorleft', 'assets/floorleft.png');
+                this.load.image('floorright', 'assets/floorright.png');
+                this.load.image('buttonBlue', 'assets/buttonBlue.png');
+                this.load.image('buttonBlue_pressed', 'assets/buttonBlue_pressed.png');
+                this.load.image('coinGold', 'assets/coinGold.png');
+                this.load.image('cherry', 'assets/cherry.png');
+                this.load.image('eevee-kick', 'assets/eevee-kick.png');
+
+                // Preload spritesheets
+                this.load.spritesheet('pikachustanding', 'assets/pikachustanding.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('pikachujumping', 'assets/pikachujumping.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('pikachurunning', 'assets/pikachurunning.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('pikachuattack', 'assets/pikachuattack.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('eevee-standing', 'assets/eevee-standing.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('eevee-walking', 'assets/eevee-walking.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('eevee-winning', 'assets/eevee-winning.png', { frameWidth: 64, frameHeight: 64 });
+
+                // Preload audio from free online sources (CC0 licensed)
+                this.load.audio('jump', 'https://freesound.org/data/previews/65/65732_19852-lq.mp3'); // Jump sound
+                this.load.audio('squish', 'https://freesound.org/data/previews/423/423229_5121236-lq.mp3'); // Squish sound
+                this.load.audio('buttonPress', 'https://freesound.org/data/previews/156/156914_2489499-lq.mp3'); // Button press
+                this.load.audio('coin', 'https://freesound.org/data/previews/198/198841_3336140-lq.mp3'); // Coin collect
+                this.load.audio('pause', 'https://freesound.org/data/previews/268/268756_4940008-lq.mp3'); // Pause sound
+                this.load.audio('select', 'https://freesound.org/data/previews/612/612600_5677352-lq.mp3'); // Menu selection
+            }
+
+            create() {
+                // Display title background
+                const bg = this.add.image(this.game.config.width / 2, this.game.config.height / 2, 'titlebg');
+                const scale = this.game.config.height / bg.height;
+                bg.setScale(scale);
+
+                // BATTLE MODE text
+                const battleText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 50, 'BATTLE MODE', {
+                    fontSize: '32px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                battleText.setInteractive();
+                battleText.on('pointerover', () => battleText.setStyle({ color: '#ff0000' }));
+                battleText.on('pointerout', () => battleText.setStyle({ color: '#ffffff' }));
+                battleText.on('pointerdown', () => {
+                    this.sound.play('select');
+                    this.scene.start('BattleScene');
+                });
+
+                // CONTROLLERS text
+                const controllersText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'CONTROLLERS', {
+                    fontSize: '32px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                controllersText.setInteractive();
+                controllersText.on('pointerover', () => controllersText.setStyle({ color: '#ff0000' }));
+                controllersText.on('pointerout', () => controllersText.setStyle({ color: '#ffffff' }));
+                controllersText.on('pointerdown', () => {
+                    this.sound.play('select');
+                    this.scene.start('OptionsScene');
+                });
+            }
+        }
+
+        // Options Scene
+        class OptionsScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'OptionsScene' });
+            }
+
+            create() {
+                // Background
+                this.add.rectangle(this.game.config.width / 2, this.game.config.height / 2, this.game.config.width, this.game.config.height, 0x000000);
+
+                // Controller 1 Display
+                const pad1Container = this.add.container(300, this.game.config.height / 2 - 50);
+                const pad1Bg = this.add.rectangle(0, 0, 250, 150, 0x666666);
+                pad1Container.add(pad1Bg);
+
+                // D-pad
+                const pad1Left = this.add.rectangle(-80, 0, 30, 30, 0xffffff);
+                const pad1Right = this.add.rectangle(-20, 0, 30, 30, 0xffffff);
+                const pad1Up = this.add.rectangle(-50, -30, 30, 30, 0xffffff);
+                const pad1Down = this.add.rectangle(-50, 30, 30, 30, 0xffffff);
+                pad1Container.add([pad1Left, pad1Right, pad1Up, pad1Down]);
+
+                // Buttons
+                const pad1Jump = this.add.circle(50, -30, 15, 0xff0000);
+                const pad1Attack = this.add.circle(80, 0, 15, 0x00ff00);
+                const pad1Run = this.add.circle(50, 30, 15, 0x0000ff);
+                pad1Container.add([pad1Jump, pad1Attack, pad1Run]);
+
+                const pad1Text = this.add.text(300, this.game.config.height / 2 - 150, 'Player 1', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+                const pad1ReadyText = this.add.text(300, this.game.config.height / 2 - 100, 'Player 1 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5);
+                pad1ReadyText.setVisible(false);
+
+                // Controller 2 Display
+                const pad2Container = this.add.container(916, this.game.config.height / 2 - 50);
+                const pad2Bg = this.add.rectangle(0, 0, 250, 150, 0x666666);
+                pad2Container.add(pad2Bg);
+
+                const pad2Left = this.add.rectangle(-80, 0, 30, 30, 0xffffff);
+                const pad2Right = this.add.rectangle(-20, 0, 30, 30, 0xffffff);
+                const pad2Up = this.add.rectangle(-50, -30, 30, 30, 0xffffff);
+                const pad2Down = this.add.rectangle(-50, 30, 30, 30, 0xffffff);
+                pad2Container.add([pad2Left, pad2Right, pad2Up, pad2Down]);
+
+                const pad2Jump = this.add.circle(50, -30, 15, 0xff0000);
+                const pad2Attack = this.add.circle(80, 0, 15, 0x00ff00);
+                const pad2Run = this.add.circle(50, 30, 15, 0x0000ff);
+                pad2Container.add([pad2Jump, pad2Attack, pad2Run]);
+
+                const pad2Text = this.add.text(916, this.game.config.height / 2 - 150, 'Player 2', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+                const pad2ReadyText = this.add.text(916, this.game.config.height / 2 - 100, 'Player 2 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5);
+                pad2ReadyText.setVisible(false);
+
+                // Back button
+                const backText = this.add.text(this.game.config.width / 2, this.game.config.height - 50, 'Back', {
+                    fontSize: '32px',
+                    color: '#ffffff'
+                }).setOrigin(0.5);
+                backText.setInteractive();
+                backText.on('pointerover', () => backText.setStyle({ color: '#ff0000' }));
+                backText.on('pointerout', () => backText.setStyle({ color: '#ffffff' }));
+                backText.on('pointerdown', () => {
+                    this.sound.play('select');
+                    this.scene.start('StartScene');
+                });
+
+                // Store references for update
+                this.pad1Controls = { left: pad1Left, right: pad1Right, up: pad1Up, down: pad1Down, jump: pad1Jump, attack: pad1Attack, run: pad1Run };
+                this.pad2Controls = { left: pad2Left, right: pad2Right, up: pad2Up, down: pad2Down, jump: pad2Jump, attack: pad2Attack, run: pad2Run };
+                this.pad1ReadyText = pad1ReadyText;
+                this.pad2ReadyText = pad2ReadyText;
+                this.pad1ReadyTimer = null;
+                this.pad2ReadyTimer = null;
+            }
+
+            update() {
+                const pad1 = this.input.gamepad.pad1;
+                const pad2 = this.input.gamepad.pad2;
+
+                // Reset colors
+                Object.values(this.pad1Controls).forEach(btn => btn.fillColor = btn === this.pad1Controls.jump ? 0xff0000 : btn === this.pad1Controls.attack ? 0x00ff00 : btn === this.pad1Controls.run ? 0x0000ff : 0xffffff);
+                Object.values(this.pad2Controls).forEach(btn => btn.fillColor = btn === this.pad2Controls.jump ? 0xff0000 : btn === this.pad2Controls.attack ? 0x00ff00 : btn === this.pad2Controls.run ? 0x0000ff : 0xffffff);
+
+                // Player 1 Controller
+                if (pad1) {
+                    if (pad1.left) this.pad1Controls.left.fillColor = 0xffff00;
+                    if (pad1.right) this.pad1Controls.right.fillColor = 0xffff00;
+                    if (pad1.up) this.pad1Controls.up.fillColor = 0xffff00;
+                    if (pad1.down) this.pad1Controls.down.fillColor = 0xffff00;
+                    if (pad1.A) this.pad1Controls.jump.fillColor = 0xffff00;
+                    if (pad1.B) this.pad1Controls.attack.fillColor = 0xffff00;
+                    if (pad1.X) this.pad1Controls.run.fillColor = 0xffff00;
+
+                    if (pad1.left || pad1.right || pad1.up || pad1.down || pad1.A || pad1.B || pad1.X) {
+                        if (!this.pad1ReadyTimer) {
+                            this.pad1ReadyText.setVisible(true);
+                            this.pad1ReadyTimer = this.time.delayedCall(2000, () => {
+                                this.pad1ReadyText.setVisible(false);
+                                this.pad1ReadyTimer = null;
+                            });
+                        }
+                    }
+                }
+
+                // Player 2 Controller
+                if (pad2) {
+                    if (pad2.left) this.pad2Controls.left.fillColor = 0xffff00;
+                    if (pad2.right) this.pad2Controls.right.fillColor = 0xffff00;
+                    if (pad2.up) this.pad2Controls.up.fillColor = 0xffff00;
+                    if (pad2.down) this.pad2Controls.down.fillColor = 0xffff00;
+                    if (pad2.A) this.pad2Controls.jump.fillColor = 0xffff00;
+                    if (pad2.B) this.pad2Controls.attack.fillColor = 0xffff00;
+                    if (pad2.X) this.pad2Controls.run.fillColor = 0xffff00;
+
+                    if (pad2.left || pad2.right || pad2.up || pad2.down || pad2.A || pad2.B || pad2.X) {
+                        if (!this.pad2ReadyTimer) {
+                            this.pad2ReadyText.setVisible(true);
+                            this.pad2ReadyTimer = this.time.delayedCall(2000, () => {
+                                this.pad2ReadyText.setVisible(false);
+                                this.pad2ReadyTimer = null;
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Battle Scene
+        class BattleScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'BattleScene' });
+            }
+
+            create() {
+                // Background
+                this.add.image(0, 0, 'battlebg').setOrigin(0, 0).setDisplaySize(this.game.config.width, this.game.config.height);
+
+                // Grid layout
+                const grid = [
+                    'F@@@@@5@@@@6@@@@@@F',
+                    'F@Q@@@@@@@@@@@@@Q@F',
+                    'FFFFFG@@@@@@@DFFFFF',
+                    'F@@@@@@@@A@@@@@@@@F',
+                    'F@@@@@DFFFFFG@@@@@F',
+                    'FFFFG@@@@@@@@@DFFFF',
+                    'F@@1@@@@@.@@@@@2@@F',
+                    'FFFFFFFFFFFFFFFFFFF'
+                ];
+
+                // Groups and variables
+                this.floors = this.physics.add.staticGroup();
+                this.buttons = this.physics.add.staticGroup();
+                this.coins = this.physics.add.group();
+                this.player1Coins = 0;
+                this.player2Coins = 0;
+                this.coinSpawnPositions = [];
+
+                // Parse grid
+                for (let i = 0; i < 8; i++) {
+                    for (let j = 0; j < 19; j++) {
+                        const cell = grid[i][j];
+                        const x = j * 64 + 32;
+                        const y = i * 64 + 32;
+
+                        if (cell === 'F') this.floors.create(x, y, 'floor');
+                        else if (cell === 'D') this.floors.create(x, y, 'floorleft');
+                        else if (cell === 'G') this.floors.create(x, y, 'floorright');
+                        else if (cell === 'Q') {
+                            const button = this.buttons.create(x, y, 'buttonBlue');
+                            button.isPressed = false;
+                            button.timer = null;
+                        }
+                        else if (cell === '1') {
+                            this.player1 = this.physics.add.sprite(x, y, 'pikachustanding');
+                            this.player1.setBounce(0.2);
+                            this.player1.setCollideWorldBounds(true);
+                            this.player1.isAttacking = false;
+                            this.player1.stunned = false;
+                            this.player1.cherry = null;
+                            this.player1.flipX = false; // Facing right
+                        }
+                        else if (cell === '2') {
+                            this.player2 = this.physics.add.sprite(x, y, 'eevee-standing');
+                            this.player2.setBounce(0.2);
+                            this.player2.setCollideWorldBounds(true);
+                            this.player2.isAttacking = false;
+                            this.player2.stunned = false;
+                            this.player2.cherry = null;
+                            this.player2.flipX = true; // Facing left
+                        }
+                        else if (cell === 'A') {
+                            this.cherry = this.physics.add.sprite(x, y, 'cherry');
+                        }
+                        else if (cell === '5') {
+                            this.player1ScoreText = this.add.text(x, y, 'pikachu: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+                            this.player1CherryIcon = this.add.image(x + 80, y, 'cherry').setScale(0.5).setVisible(false);
+                        }
+                        else if (cell === '6') {
+                            this.player2ScoreText = this.add.text(x, y, 'Eevee: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+                            this.player2CherryIcon = this.add.image(x + 80, y, 'cherry').setScale(0.5).setVisible(false);
+                        }
+                        else if (cell === '.') {
+                            this.coinSpawnPositions.push({ x, y });
+                        }
+                    }
+                }
+
+                // Animations
+                this.anims.create({
+                    key: 'pikachu_stand',
+                    frames: this.anims.generateFrameNumbers('pikachustanding', { start: 0, end: 5 }),
+                    frameRate: 10,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'pikachu_jump',
+                    frames: this.anims.generateFrameNumbers('pikachujumping', { start: 0, end: 12 }),
+                    frameRate: 20,
+                    repeat: 0
+                });
+                this.anims.create({
+                    key: 'pikachu_run',
+                    frames: this.anims.generateFrameNumbers('pikachurunning', { start: 0, end: 13 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'pikachu_attack',
+                    frames: this.anims.generateFrameNumbers('pikachuattack', { start: 0, end: 11 }),
+                    frameRate: 20,
+                    repeat: 0
+                });
+                this.anims.create({
+                    key: 'eevee_stand',
+                    frames: this.anims.generateFrameNumbers('eevee-standing', { start: 0, end: 9 }),
+                    frameRate: 10,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'eevee_walk',
+                    frames: this.anims.generateFrameNumbers('eevee-walking', { start: 0, end: 5 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'eevee_win',
+                    frames: this.anims.generateFrameNumbers('eevee-winning', { start: 0, end: 4 }),
+                    frameRate: 10,
+                    repeat: -1
+                });
+
+                // Physics
+                this.physics.add.collider(this.player1, this.floors);
+                this.physics.add.collider(this.player2, this.floors);
+                this.physics.add.overlap(this.player1, this.buttons, this.pressButton, null, this);
+                this.physics.add.overlap(this.player2, this.buttons, this.pressButton, null, this);
+                this.physics.add.overlap(this.player1, this.cherry, this.collectCherry, null, this);
+                this.physics.add.overlap(this.player2, this.cherry, this.collectCherry, null, this);
+                this.physics.add.collider(this.player1, this.player2, this.playerCollision, null, this);
+
+                // Help screen
+                this.helpScreen = this.add.group();
+                const helpBg = this.add.rectangle(this.game.config.width / 2, this.game.config.height / 2, this.game.config.width, this.game.config.height, 0x000000, 0.8);
+                const helpText = this.add.text(this.game.config.width / 2, this.game.config.height / 2, 
+                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad - Move\nA - Jump\nB - Attack\nX - Run', 
+                    { fontSize: '24px', color: '#ffffff', align: 'center' }).setOrigin(0.5);
+                this.helpScreen.addMultiple([helpBg, helpText]);
+                this.helpScreen.setVisible(false);
+
+                this.add.text(this.game.config.width - 10, 10, 'PRESS H FOR HELP', { fontSize: '16px', color: '#ffffff' }).setOrigin(1, 0);
+
+                this.input.keyboard.on('keydown-H', () => this.toggleHelp());
+                this.isPaused = false;
+
+                // Initial animations
+                this.player1.play('pikachu_stand');
+                this.player2.play('eevee_stand');
+            }
+
+            update() {
+                const pad1 = this.input.gamepad.pad1;
+                const pad2 = this.input.gamepad.pad2;
+
+                // Player 1 controls
+                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && pad1.left);
+                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && pad1.right);
+                const jump1 = this.input.keyboard.addKey('Z').isDown || (pad1 && pad1.A);
+                const attack1 = this.input.keyboard.addKey('X').isDown || (pad1 && pad1.B);
+                const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1.X);
+
+                // Player 2 controls
+                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && pad2.left);
+                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && pad2.right);
+                const jump2 = this.input.keyboard.addKey('B').isDown || (pad2 && pad2.A);
+                const attack2 = this.input.keyboard.addKey('N').isDown || (pad2 && pad2.B);
+                const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2.X);
+
+                // Controller START for help
+                if ((pad1 && pad1.start && !this.pad1StartPressed) || (pad2 && pad2.start && !this.pad2StartPressed)) {
+                    this.toggleHelp();
+                }
+                this.pad1StartPressed = pad1 && pad1.start;
+                this.pad2StartPressed = pad2 && pad2.start;
+
+                // Player 1 movement
+                if (!this.player1.stunned) {
+                    if (left1) {
+                        this.player1.setVelocityX(run1 ? -320 : -160);
+                        this.player1.flipX = true;
+                        if (this.player1.body.onFloor()) this.player1.play('pikachu_run', true);
+                    } else if (right1) {
+                        this.player1.setVelocityX(run1 ? 320 : 160);
+                        this.player1.flipX = false;
+                        if (this.player1.body.onFloor()) this.player1.play('pikachu_run', true);
+                    } else {
+                        this.player1.setVelocityX(0);
+                        if (this.player1.body.onFloor() && !this.player1.isAttacking) this.player1.play('pikachu_stand', true);
+                    }
+
+                    if (jump1 && this.player1.body.onFloor()) {
+                        this.player1.setVelocityY(-330);
+                        this.player1.play('pikachu_jump', true);
+                        this.sound.play('jump');
+                    }
+
+                    if (attack1 && !this.player1.isAttacking) {
+                        this.player1.isAttacking = true;
+                        this.player1.play('pikachu_attack', true);
+                        this.time.delayedCall(600, () => { this.player1.isAttacking = false; });
+                    }
+                }
+
+                // Player 2 movement
+                if (!this.player2.stunned) {
+                    if (left2) {
+                        this.player2.setVelocityX(run2 ? -320 : -160);
+                        this.player2.flipX = true;
+                        if (this.player2.body.onFloor()) this.player2.play('eevee_walk', true);
+                    } else if (right2) {
+                        this.player2.setVelocityX(run2 ? 320 : 160);
+                        this.player2.flipX = false;
+                        if (this.player2.body.onFloor()) this.player2.play('eevee_walk', true);
+                    } else {
+                        this.player2.setVelocityX(0);
+                        if (this.player2.body.onFloor() && !this.player2.isAttacking) this.player2.play('eevee_stand', true);
+                    }
+
+                    if (jump2 && this.player2.body.onFloor()) {
+                        this.player2.setVelocityY(-330);
+                        this.player2.play('eevee_stand', true); // No jump animation, use stand
+                        this.sound.play('jump');
+                    }
+
+                    if (attack2 && !this.player2.isAttacking) {
+                        this.player2.isAttacking = true;
+                        this.player2.setTexture('eevee-kick');
+                        this.time.delayedCall(300, () => {
+                            this.player2.isAttacking = false;
+                            this.player2.play('eevee_stand', true);
+                        });
+                    }
+                }
+
+                // Update animations based on state
+                if (!this.player1.body.onFloor() && !this.player1.isAttacking) this.player1.play('pikachu_jump', true);
+                if (!this.player2.body.onFloor() && !this.player2.isAttacking) this.player2.play('eevee_stand', true);
+            }
+
+            pressButton(player, button) {
+                if (!button.isPressed && player.body.velocity.y > 0 && player.y < button.y) {
+                    button.isPressed = true;
+                    button.setTexture('buttonBlue_pressed');
+                    this.sound.play('buttonPress');
+                    this.spawnCoin();
+                    button.timer = this.time.delayedCall(5000, () => {
+                        button.isPressed = false;
+                        button.setTexture('buttonBlue');
+                        button.timer = null;
+                    });
+                }
+            }
+
+            spawnCoin() {
+                const spawnPos = this.coinSpawnPositions[0];
+                const coin = this.coins.create(spawnPos.x, spawnPos.y, 'coinGold');
+                coin.body.allowGravity = false;
+                coin.setBounce(0);
+                this.tweens.add({
+                    targets: coin,
+                    x: { from: spawnPos.x - 100, to: spawnPos.x + 100 },
+                    duration: 2000,
+                    yoyo: true,
+                    repeat: -1,
+                    onUpdate: () => coin.setAlpha(coin.alpha === 1 ? 0.5 : 1)
+                });
+                this.physics.add.overlap(this.player1, coin, this.collectCoin, null, this);
+                this.physics.add.overlap(this.player2, coin, this.collectCoin, null, this);
+            }
+
+            collectCoin(player, coin) {
+                coin.destroy();
+                this.sound.play('coin');
+                if (player === this.player1) {
+                    this.player1Coins++;
+                    this.player1ScoreText.setText('pikachu: ' + this.player1Coins);
+                } else {
+                    this.player2Coins++;
+                    this.player2ScoreText.setText('Eevee: ' + this.player2Coins);
+                }
+                if (this.player1Coins >= 21 || this.player2Coins >= 21) this.endGame();
+            }
+
+            collectCherry(player, cherry) {
+                if (!player.cherry) {
+                    player.cherry = cherry;
+                    cherry.setVisible(false);
+                    if (player === this.player1) this.player1CherryIcon.setVisible(true);
+                    else this.player2CherryIcon.setVisible(true);
+                }
+            }
+
+            playerCollision(playerA, playerB) {
+                if (playerA.isAttacking && !playerB.stunned) this.damagePlayer(playerB);
+                else if (playerB.isAttacking && !playerA.stunned) this.damagePlayer(playerA);
+                else if (playerA.body.velocity.y > 0 && playerA.y < playerB.y && !playerB.stunned) this.damagePlayer(playerB);
+                else if (playerB.body.velocity.y > 0 && playerB.y < playerA.y && !playerA.stunned) this.damagePlayer(playerA);
+            }
+
+            damagePlayer(player) {
+                this.sound.play('squish');
+                player.stunned = true;
+                player.setScale(1, 0.8);
+                this.tweens.add({
+                    targets: player,
+                    alpha: 0.5,
+                    duration: 250,
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => {
+                        player.stunned = false;
+                        player.setScale(1);
+                        player.setAlpha(1);
+                    }
+                });
+
+                if (player.cherry) {
+                    const cherry = player.cherry;
+                    cherry.setVisible(true);
+                    cherry.x = player.x + (player.flipX ? -256 : 256);
+                    cherry.y = player.y;
+                    this.tweens.add({
+                        targets: cherry,
+                        alpha: 0.5,
+                        duration: 300,
+                        yoyo: true,
+                        repeat: 5,
+                        onComplete: () => cherry.setAlpha(1)
+                    });
+                    if (player === this.player1) this.player1CherryIcon.setVisible(false);
+                    else this.player2CherryIcon.setVisible(false);
+                    player.cherry = null;
+                }
+            }
+
+            endGame() {
+                this.physics.pause();
+                const score1 = this.player1Coins + (this.player1.cherry ? 5 : 0);
+                const score2 = this.player2Coins + (this.player2.cherry ? 5 : 0);
+                let winner = score1 > score2 ? this.player1 : score2 > score1 ? this.player2 : null;
+
+                // Animation for score calculation
+                const scoreDisplay = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 100, '', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
+                this.time.delayedCall(1000, () => scoreDisplay.setText(`Pikachu: ${this.player1Coins}`));
+                this.time.delayedCall(2000, () => scoreDisplay.setText(`Pikachu: ${this.player1Coins} + ${this.player1.cherry ? 5 : 0} = ${score1}`));
+                this.time.delayedCall(3000, () => scoreDisplay.setText(`Eevee: ${this.player2Coins}`));
+                this.time.delayedCall(4000, () => scoreDisplay.setText(`Eevee: ${this.player2Coins} + ${this.player2.cherry ? 5 : 0} = ${score2}`));
+                this.time.delayedCall(5000, () => {
+                    scoreDisplay.setText(winner === this.player1 ? 'Pikachu Wins!' : winner === this.player2 ? 'Eevee Wins!' : 'Tie!');
+                    this.children.list.forEach(child => {
+                        if (child !== winner && child !== scoreDisplay && child !== this.rematchText && child !== this.exitText) child.setVisible(false);
+                    });
+                    if (winner === this.player1) this.player1.play('pikachu_attack', true);
+                    else if (winner === this.player2) this.player2.play('eevee_win', true);
+                });
+
+                // Rematch and Exit buttons
+                this.rematchText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'Rematch', {
+                    fontSize: '32px',
+                    color: '#ff0000'
+                }).setOrigin(0.5).setInteractive();
+                this.exitText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 100, 'Exit', {
+                    fontSize: '32px',
+                    color: '#ffffff'
+                }).setOrigin(0.5).setInteractive();
+
+                this.rematchText.on('pointerover', () => { this.rematchText.setStyle({ color: '#ff0000' }); this.sound.play('select'); });
+                this.rematchText.on('pointerout', () => this.rematchText.setStyle({ color: '#ff0000' }));
+                this.rematchText.on('pointerdown', () => this.scene.restart());
+                this.exitText.on('pointerover', () => { this.exitText.setStyle({ color: '#ff0000' }); this.sound.play('select'); });
+                this.exitText.on('pointerout', () => this.exitText.setStyle({ color: '#ffffff' }));
+                this.exitText.on('pointerdown', () => this.scene.start('StartScene'));
+            }
+
+            toggleHelp() {
+                this.isPaused = !this.isPaused;
+                this.helpScreen.setVisible(this.isPaused);
+                if (this.isPaused) {
+                    this.physics.pause();
+                    this.sound.play('pause');
+                } else {
+                    this.physics.resume();
+                }
+            }
+        }
+
+        // Game Configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 1216, // 19 tiles * 64px
+            height: 512, // 8 tiles * 64px
+            parent: 'game-container',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 300 },
+                    debug: false
+                }
+            },
+            scene: [StartScene, OptionsScene, BattleScene]
+        };
+
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+</html>

@@ -75,7 +75,7 @@
                 const battleText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 50, 'BATTLE MODE', {
                     fontSize: '32px',
                     color: '#ffffff'
-                }).setOrigin(0.5);
+                }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 battleText.setInteractive();
                 battleText.on('pointerover', () => battleText.setStyle({ color: '#ff0000' }));
                 battleText.on('pointerout', () => battleText.setStyle({ color: '#ffffff' }));
@@ -88,7 +88,7 @@
                 const controllersText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'CONTROLLERS', {
                     fontSize: '32px',
                     color: '#ffffff'
-                }).setOrigin(0.5);
+                }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 controllersText.setInteractive();
                 controllersText.on('pointerover', () => controllersText.setStyle({ color: '#ff0000' }));
                 controllersText.on('pointerout', () => controllersText.setStyle({ color: '#ffffff' }));
@@ -127,8 +127,8 @@
                 const pad1Run = this.add.circle(50, 30, 15, 0x0000ff);
                 pad1Container.add([pad1Jump, pad1Attack, pad1Run]);
 
-                const pad1Text = this.add.text(300, this.game.config.height / 2 - 150, 'Player 1', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
-                const pad1ReadyText = this.add.text(300, this.game.config.height / 2 - 100, 'Player 1 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5);
+                const pad1Text = this.add.text(300, this.game.config.height / 2 - 150, 'Player 1', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
+                const pad1ReadyText = this.add.text(300, this.game.config.height / 2 - 100, 'Player 1 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 pad1ReadyText.setVisible(false);
 
                 // Controller 2 Display
@@ -147,15 +147,15 @@
                 const pad2Run = this.add.circle(50, 30, 15, 0x0000ff);
                 pad2Container.add([pad2Jump, pad2Attack, pad2Run]);
 
-                const pad2Text = this.add.text(916, this.game.config.height / 2 - 150, 'Player 2', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
-                const pad2ReadyText = this.add.text(916, this.game.config.height / 2 - 100, 'Player 2 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5);
+                const pad2Text = this.add.text(916, this.game.config.height / 2 - 150, 'Player 2', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
+                const pad2ReadyText = this.add.text(916, this.game.config.height / 2 - 100, 'Player 2 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 pad2ReadyText.setVisible(false);
 
                 // Back button
                 const backText = this.add.text(this.game.config.width / 2, this.game.config.height - 50, 'Back', {
                     fontSize: '32px',
                     color: '#ffffff'
-                }).setOrigin(0.5);
+                }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 backText.setInteractive();
                 backText.on('pointerover', () => backText.setStyle({ color: '#ff0000' }));
                 backText.on('pointerout', () => backText.setStyle({ color: '#ffffff' }));
@@ -174,8 +174,8 @@
             }
 
             update() {
-                const pad1 = this.input.gamepad.pad1;
-                const pad2 = this.input.gamepad.pad2;
+                const pad1 = this.input.gamepad && this.input.gamepad.pad1;
+                const pad2 = this.input.gamepad && this.input.gamepad.pad2;
 
                 // Reset colors
                 Object.values(this.pad1Controls).forEach(btn => btn.fillColor = btn === this.pad1Controls.jump ? 0xff0000 : btn === this.pad1Controls.attack ? 0x00ff00 : btn === this.pad1Controls.run ? 0x0000ff : 0xffffff);
@@ -292,11 +292,11 @@
                             this.cherry = this.physics.add.sprite(x, y, 'cherry');
                         }
                         else if (cell === '5') {
-                            this.player1ScoreText = this.add.text(x, y, 'pikachu: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+                            this.player1ScoreText = this.add.text(x, y, 'pikachu: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                             this.player1CherryIcon = this.add.image(x + 80, y, 'cherry').setScale(0.5).setVisible(false);
                         }
                         else if (cell === '6') {
-                            this.player2ScoreText = this.add.text(x, y, 'Eevee: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
+                            this.player2ScoreText = this.add.text(x, y, 'Eevee: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                             this.player2CherryIcon = this.add.image(x + 80, y, 'cherry').setScale(0.5).setVisible(false);
                         }
                         else if (cell === '.') this.coinSpawnPositions.push({ x, y });
@@ -359,13 +359,13 @@
                 // Help screen
                 this.helpScreen = this.add.group();
                 const helpBg = this.add.rectangle(this.game.config.width / 2, this.game.config.height / 2, this.game.config.width, this.game.config.height, 0x000000, 0.8);
-                const helpText = this.add.text(this.game.config.width / 2, this.game.config.height / 2, 
-                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad - Move\nA - Jump\nB - Attack\nX - Run', 
-                    { fontSize: '24px', color: '#ffffff', align: 'center' }).setOrigin(0.5);
+                const helpText = this.add.text(this.game.config.width / 2, this.game.config.height / 2,
+                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad - Move\nA - Jump\nB - Attack\nX - Run',
+                    { fontSize: '24px', color: '#ffffff', align: 'center' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 this.helpScreen.addMultiple([helpBg, helpText]);
                 this.helpScreen.setVisible(false);
 
-                this.add.text(this.game.config.width - 10, 10, 'PRESS H FOR HELP', { fontSize: '16px', color: '#ffffff' }).setOrigin(1, 0);
+                this.add.text(this.game.config.width - 10, 10, 'PRESS H FOR HELP', { fontSize: '16px', color: '#ffffff' }).setOrigin(1, 0).setShadow(2, 2, '#000000', 2, true, true);
 
                 this.input.keyboard.on('keydown-H', () => this.toggleHelp());
                 this.isPaused = false;
@@ -376,8 +376,8 @@
             }
 
             update() {
-                const pad1 = this.input.gamepad.pad1;
-                const pad2 = this.input.gamepad.pad2;
+                const pad1 = this.input.gamepad && this.input.gamepad.pad1;
+                const pad2 = this.input.gamepad && this.input.gamepad.pad2;
 
                 // Player 1 controls
                 const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && pad1.left);
@@ -567,7 +567,7 @@
                 let winner = score1 > score2 ? this.player1 : score2 > score1 ? this.player2 : null;
 
                 // Animation for score calculation
-                const scoreDisplay = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 100, '', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
+                const scoreDisplay = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 100, '', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 this.time.delayedCall(1000, () => scoreDisplay.setText(`Pikachu: ${this.player1Coins}`));
                 this.time.delayedCall(2000, () => scoreDisplay.setText(`Pikachu: ${this.player1Coins} + ${this.player1.cherry ? 5 : 0} = ${score1}`));
                 this.time.delayedCall(3000, () => scoreDisplay.setText(`Eevee: ${this.player2Coins}`));
@@ -585,15 +585,17 @@
                 this.rematchText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'Rematch', {
                     fontSize: '32px',
                     color: '#ff0000'
-                }).setOrigin(0.5).setInteractive();
+                }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 this.exitText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 100, 'Exit', {
                     fontSize: '32px',
                     color: '#ffffff'
-                }).setOrigin(0.5).setInteractive();
+                }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
 
+                this.rematchText.setInteractive();
                 this.rematchText.on('pointerover', () => { this.rematchText.setStyle({ color: '#ff0000' }); this.sound.play('select'); });
                 this.rematchText.on('pointerout', () => this.rematchText.setStyle({ color: '#ff0000' }));
                 this.rematchText.on('pointerdown', () => this.scene.restart());
+                this.exitText.setInteractive();
                 this.exitText.on('pointerover', () => { this.exitText.setStyle({ color: '#ff0000' }); this.sound.play('select'); });
                 this.exitText.on('pointerout', () => this.exitText.setStyle({ color: '#ffffff' }));
                 this.exitText.on('pointerdown', () => this.scene.start('StartScene'));

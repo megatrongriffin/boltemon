@@ -44,7 +44,6 @@
                 this.player1Pad = null;
                 this.player2Pad = null;
 
-                // Check if gamepad plugin is available before attaching events
                 if (this.input.gamepad) {
                     this.input.gamepad.on('down', (pad, button, index) => {
                         if (!this.player1Pad) {
@@ -238,7 +237,7 @@
 
                     if (pad1.left || pad1.right || pad1.up || pad1.down || pad1.A || pad1.B || pad1.X) {
                         if (!this.pad1ReadyTimer) {
-                            this.pad1ReadyText.setVisible(true); // Fixed typo here
+                            this.pad1ReadyText.setVisible(true);
                             this.pad1ReadyTimer = this.time.delayedCall(2000, () => {
                                 this.pad1ReadyText.setVisible(false);
                                 this.pad1ReadyTimer = null;
@@ -283,15 +282,18 @@
             create() {
                 this.add.image(0, 0, 'battlebg').setOrigin(0, 0).setDisplaySize(this.game.config.width, this.game.config.height);
 
+                // Updated grid with 10 rows (height 640px), platforms adjusted for playability
                 const grid = [
-                    'F@@@@@5@@@@6@@@@@@F',
-                    'F@Q@@@@@@@@@@@@@Q@F',
-                    'FFFFFG@@@@@@@DFFFFF',
-                    'F@@@@@@@@A@@@@@@@@F',
-                    'F@@@@@DFFFFFG@@@@@F',
-                    'FFFFG@@@@@@@@@DFFFF',
-                    'F@@1@@@@@.@@@@@2@@F',
-                    'FFFFFFFFFFFFFFFFFFF'
+                    'F@@@@@5@@@@6@@@@@@F', // Row 0
+                    'F@Q@@@@@@@@@@@@@Q@F', // Row 1
+                    'FFFFFG@@@@@@@DFFFFF', // Row 2
+                    'F@@@@@@@F@A@F@@@@@F', // Row 3 - Cherry on a platform
+                    'F@@@@@DFFFFFG@@@@@F', // Row 4
+                    'FFFFG@@@@@@@@@DFFFF', // Row 5
+                    'F@@F1F@@@@@F2F@@@@F', // Row 6 - Players on platforms
+                    'F@@@@@DFFFFFG@@@@@F', // Row 7
+                    'FFFFFG@@@@@@@DFFFFF', // Row 8
+                    'FFFFFFFFFFFFFFFFFFF'  // Row 9 - Ground
                 ];
 
                 this.floors = this.physics.add.staticGroup();
@@ -301,7 +303,7 @@
                 this.player2Coins = 0;
                 this.coinSpawnPositions = [];
 
-                for (let i = 0; i < 8; i++) {
+                for (let i = 0; i < 10; i++) {
                     for (let j = 0; j < 19; j++) {
                         const cell = grid[i][j];
                         const x = j * 64 + 32;
@@ -338,7 +340,7 @@
                             this.cherry.setBounce(0.2);
                         }
                         else if (cell === '5') {
-                            this.player1ScoreText = this.add.text(x, y, 'pikachu: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
+                            this.player1ScoreText = this.add.text(x, y, 'Pikachu: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                             this.player1CherryIcon = this.add.image(x + 80, y, 'cherry').setScale(0.5).setVisible(false);
                         }
                         else if (cell === '6') {
@@ -349,12 +351,17 @@
                     }
                 }
 
+                // Fix floor collision: solid from above, pass-through from below
                 this.floors.getChildren().forEach(floor => {
-                    floor.body.checkCollision.up = false;
-                    floor.body.checkCollision.down = true;
+                    floor.body.checkCollision.up = true;
+                    floor.body.checkCollision.down = false;
                     floor.body.checkCollision.left = true;
                     floor.body.checkCollision.right = true;
                 });
+
+                // Debug gamepad detection
+                console.log('Player 1 Pad:', this.player1Pad);
+                console.log('Player 2 Pad:', this.player2Pad);
 
                 this.anims.create({
                     key: 'pikachu_stand',
@@ -411,7 +418,7 @@
                 this.helpScreen = this.add.group();
                 const helpBg = this.add.rectangle(this.game.config.width / 2, this.game.config.height / 2, this.game.config.width, this.game.config.height, 0x000000, 0.8);
                 const helpText = this.add.text(this.game.config.width / 2, this.game.config.height / 2,
-                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad - Move\nA - Jump\nB - Attack\nX - Run',
+                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad/Analog - Move\nA - Jump\nB - Attack\nX - Run',
                     { fontSize: '24px', color: '#ffffff', align: 'center' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 this.helpScreen.addMultiple([helpBg, helpText]);
                 this.helpScreen.setVisible(false);
@@ -429,14 +436,15 @@
                 const pad1 = this.player1Pad || (this.input.gamepad && this.input.gamepad.pad1);
                 const pad2 = this.player2Pad || (this.input.gamepad && this.input.gamepad.pad2);
 
-                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && pad1.left);
-                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && pad1.right);
+                // Enhanced controller support with D-pad and analog stick
+                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1.left || (pad1.axes.length > 0 && pad1.axes[0].getValue() < -0.5)));
+                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1.right || (pad1.axes.length > 0 && pad1.axes[0].getValue() > 0.5)));
                 const jump1 = this.input.keyboard.addKey('Z').isDown || (pad1 && pad1.A);
                 const attack1 = this.input.keyboard.addKey('X').isDown || (pad1 && pad1.B);
                 const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1.X);
 
-                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && pad2.left);
-                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && pad2.right);
+                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2.left || (pad2.axes.length > 0 && pad2.axes[0].getValue() < -0.5)));
+                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2.right || (pad2.axes.length > 0 && pad2.axes[0].getValue() > 0.5)));
                 const jump2 = this.input.keyboard.addKey('B').isDown || (pad2 && pad2.A);
                 const attack2 = this.input.keyboard.addKey('N').isDown || (pad2 && pad2.B);
                 const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2.X);
@@ -462,7 +470,7 @@
                     }
 
                     if (jump1 && this.player1.body.onFloor()) {
-                        this.player1.setVelocityY(-330);
+                        this.player1.setVelocityY(-450); // Increased jump height
                         this.player1.play('pikachu_jump', true);
                         this.sound.play('jump');
                     }
@@ -489,7 +497,7 @@
                     }
 
                     if (jump2 && this.player2.body.onFloor()) {
-                        this.player2.setVelocityY(-330);
+                        this.player2.setVelocityY(-450); // Increased jump height
                         this.player2.play('eevee_stand', true);
                         this.sound.play('jump');
                     }
@@ -523,7 +531,7 @@
             }
 
             spawnCoin() {
-                const spawnPos = this.coinSpawnPositions[0];
+                const spawnPos = this.coinSpawnPositions[0] || { x: this.game.config.width / 2, y: this.game.config.height / 2 };
                 const coin = this.coins.create(spawnPos.x, spawnPos.y, 'coinGold');
                 coin.body.allowGravity = false;
                 coin.setBounce(0);
@@ -544,7 +552,7 @@
                 this.sound.play('coin');
                 if (player === this.player1) {
                     this.player1Coins++;
-                    this.player1ScoreText.setText('pikachu: ' + this.player1Coins);
+                    this.player1ScoreText.setText('Pikachu: ' + this.player1Coins);
                 } else {
                     this.player2Coins++;
                     this.player2ScoreText.setText('Eevee: ' + this.player2Coins);
@@ -660,7 +668,7 @@
         const config = {
             type: Phaser.AUTO,
             width: 1216,
-            height: 512,
+            height: 640, // Increased to 10 rows (10 * 64)
             parent: 'game-container',
             scale: {
                 mode: Phaser.Scale.FIT,

@@ -282,18 +282,20 @@
             create() {
                 this.add.image(0, 0, 'battlebg').setOrigin(0, 0).setDisplaySize(this.game.config.width, this.game.config.height);
 
-                // Updated grid with 10 rows (height 640px), platforms adjusted for playability
+                // Updated grid with 12 rows (height 768px) and more blank rows for better traversability
                 const grid = [
                     'F@@@@@5@@@@6@@@@@@F', // Row 0
                     'F@Q@@@@@@@@@@@@@Q@F', // Row 1
-                    'FFFFFG@@@@@@@DFFFFF', // Row 2
-                    'F@@@@@@@F@A@F@@@@@F', // Row 3 - Cherry on a platform
-                    'F@@@@@DFFFFFG@@@@@F', // Row 4
-                    'FFFFG@@@@@@@@@DFFFF', // Row 5
-                    'F@@F1F@@@@@F2F@@@@F', // Row 6 - Players on platforms
-                    'F@@@@@DFFFFFG@@@@@F', // Row 7
-                    'FFFFFG@@@@@@@DFFFFF', // Row 8
-                    'FFFFFFFFFFFFFFFFFFF'  // Row 9 - Ground
+                    'F@@@@@F@@@@@F@@@@@F', // Row 2
+                    'F@@@@@F@@@@@F@@@@@F', // Row 3
+                    'F@@@@@F@A@F@F@@@@@F', // Row 4 - Cherry on a platform
+                    'F@@@@@DFFFFFG@@@@@F', // Row 5
+                    'F@@@@@F@@@@@F@@@@@F', // Row 6
+                    'F@@@@@F@@@@@F@@@@@F', // Row 7
+                    'F@@F1F@@@@@F2F@@@@F', // Row 8 - Players on platforms
+                    'F@@@@@DFFFFFG@@@@@F', // Row 9
+                    'F@@@@@F@@@@@F@@@@@F', // Row 10
+                    'FFFFFFFFFFFFFFFFFFF'  // Row 11 - Ground
                 ];
 
                 this.floors = this.physics.add.staticGroup();
@@ -303,7 +305,7 @@
                 this.player2Coins = 0;
                 this.coinSpawnPositions = [];
 
-                for (let i = 0; i < 10; i++) {
+                for (let i = 0; i < 12; i++) {
                     for (let j = 0; j < 19; j++) {
                         const cell = grid[i][j];
                         const x = j * 64 + 32;
@@ -433,8 +435,8 @@
             }
 
             update() {
-                const pad1 = this.player1Pad || (this.input.gamepad && this.input.gamepad.pad1);
-                const pad2 = this.player2Pad || (this.input.gamepad && this.input.gamepad.pad2);
+                const pad1 = this.player1Pad;
+                const pad2 = this.player2Pad;
 
                 // Enhanced controller support with D-pad and analog stick
                 const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1.left || (pad1.axes.length > 0 && pad1.axes[0].getValue() < -0.5)));
@@ -478,6 +480,7 @@
                     if (attack1 && !this.player1.isAttacking) {
                         this.player1.isAttacking = true;
                         this.player1.play('pikachu_attack', true);
+                        this.checkAttack(this.player1, this.player2);
                         this.time.delayedCall(600, () => { this.player1.isAttacking = false; });
                     }
                 }
@@ -505,6 +508,7 @@
                     if (attack2 && !this.player2.isAttacking) {
                         this.player2.isAttacking = true;
                         this.player2.setTexture('eevee-kick');
+                        this.checkAttack(this.player2, this.player1);
                         this.time.delayedCall(300, () => {
                             this.player2.isAttacking = false;
                             this.player2.play('eevee_stand', true);
@@ -514,6 +518,20 @@
 
                 if (!this.player1.body.onFloor() && !this.player1.isAttacking) this.player1.play('pikachu_jump', true);
                 if (!this.player2.body.onFloor() && !this.player2.isAttacking) this.player2.play('eevee_stand', true);
+            }
+
+            checkAttack(attacker, defender) {
+                const tileSize = 64;
+                const attackerTileX = Math.floor(attacker.x / tileSize);
+                const attackerTileY = Math.floor(attacker.y / tileSize);
+                const attackDirection = attacker.flipX ? -1 : 1;
+                const attackTileX = attackerTileX + attackDirection;
+                const defenderTileX = Math.floor(defender.x / tileSize);
+                const defenderTileY = Math.floor(defender.y / tileSize);
+
+                if (attackTileX === defenderTileX && attackerTileY === defenderTileY) {
+                    this.damagePlayer(defender);
+                }
             }
 
             pressButton(player, button) {
@@ -668,7 +686,7 @@
         const config = {
             type: Phaser.AUTO,
             width: 1216,
-            height: 640, // Increased to 10 rows (10 * 64)
+            height: 768, // Increased to 12 rows (12 * 64)
             parent: 'game-container',
             scale: {
                 mode: Phaser.Scale.FIT,

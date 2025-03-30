@@ -35,34 +35,34 @@
             }
 
             preload() {
-                // Preload all images
-                this.load.image('titlebg', 'assets/titlebg.png');
-                this.load.image('battlebg', 'assets/battlebg.jpg');
-                this.load.image('floor', 'assets/floor.png');
-                this.load.image('floorleft', 'assets/floorleft.png');
-                this.load.image('floorright', 'assets/floorright.png');
-                this.load.image('buttonBlue', 'assets/buttonBlue.png');
-                this.load.image('buttonBlue_pressed', 'assets/buttonBlue_pressed.png');
-                this.load.image('coinGold', 'assets/coinGold.png');
-                this.load.image('cherry', 'assets/cherry.png');
-                this.load.image('eevee-kick', 'assets/eevee-kick.png');
+                // Preload all images with full repository path
+                this.load.image('titlebg', '/boltemon/assets/titlebg.png');
+                this.load.image('battlebg', '/boltemon/assets/battlebg.jpg');
+                this.load.image('floor', '/boltemon/assets/floor.png');
+                this.load.image('floorleft', '/boltemon/assets/floorleft.png');
+                this.load.image('floorright', '/boltemon/assets/floorright.png');
+                this.load.image('buttonBlue', '/boltemon/assets/buttonBlue.png');
+                this.load.image('buttonBlue_pressed', '/boltemon/assets/buttonBlue_pressed.png');
+                this.load.image('coinGold', '/boltemon/assets/coinGold.png');
+                this.load.image('cherry', '/boltemon/assets/cherry.png');
+                this.load.image('eevee-kick', '/boltemon/assets/eevee-kick.png');
 
-                // Preload spritesheets
-                this.load.spritesheet('pikachustanding', 'assets/pikachustanding.png', { frameWidth: 64, frameHeight: 64 });
-                this.load.spritesheet('pikachujumping', 'assets/pikachujumping.png', { frameWidth: 64, frameHeight: 64 });
-                this.load.spritesheet('pikachurunning', 'assets/pikachurunning.png', { frameWidth: 64, frameHeight: 64 });
-                this.load.spritesheet('pikachuattack', 'assets/pikachuattack.png', { frameWidth: 64, frameHeight: 64 });
-                this.load.spritesheet('eevee-standing', 'assets/eevee-standing.png', { frameWidth: 64, frameHeight: 64 });
-                this.load.spritesheet('eevee-walking', 'assets/eevee-walking.png', { frameWidth: 64, frameHeight: 64 });
-                this.load.spritesheet('eevee-winning', 'assets/eevee-winning.png', { frameWidth: 64, frameHeight: 64 });
+                // Preload spritesheets with full repository path
+                this.load.spritesheet('pikachustanding', '/boltemon/assets/pikachustanding.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('pikachujumping', '/boltemon/assets/pikachujumping.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('pikachurunning', '/boltemon/assets/pikachurunning.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('pikachuattack', '/boltemon/assets/pikachuattack.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('eevee-standing', '/boltemon/assets/eevee-standing.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('eevee-walking', '/boltemon/assets/eevee-walking.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('eevee-winning', '/boltemon/assets/eevee-winning.png', { frameWidth: 64, frameHeight: 64 });
 
-                // Preload audio from free online sources (CC0 licensed)
-                this.load.audio('jump', 'https://freesound.org/data/previews/65/65732_19852-lq.mp3'); // Jump sound
-                this.load.audio('squish', 'https://freesound.org/data/previews/423/423229_5121236-lq.mp3'); // Squish sound
-                this.load.audio('buttonPress', 'https://freesound.org/data/previews/156/156914_2489499-lq.mp3'); // Button press
-                this.load.audio('coin', 'https://freesound.org/data/previews/198/198841_3336140-lq.mp3'); // Coin collect
-                this.load.audio('pause', 'https://freesound.org/data/previews/268/268756_4940008-lq.mp3'); // Pause sound
-                this.load.audio('select', 'https://freesound.org/data/previews/612/612600_5677352-lq.mp3'); // Menu selection
+                // Preload audio from local assets folder
+                this.load.audio('jump', '/boltemon/assets/jump.mp3');
+                this.load.audio('squish', '/boltemon/assets/squish.mp3');
+                this.load.audio('buttonPress', '/boltemon/assets/buttonPress.mp3');
+                this.load.audio('coin', '/boltemon/assets/coin.mp3');
+                this.load.audio('pause', '/boltemon/assets/pause.mp3');
+                this.load.audio('select', '/boltemon/assets/select.mp3');
             }
 
             create() {
@@ -299,9 +299,7 @@
                             this.player2ScoreText = this.add.text(x, y, 'Eevee: 0', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5);
                             this.player2CherryIcon = this.add.image(x + 80, y, 'cherry').setScale(0.5).setVisible(false);
                         }
-                        else if (cell === '.') {
-                            this.coinSpawnPositions.push({ x, y });
-                        }
+                        else if (cell === '.') this.coinSpawnPositions.push({ x, y });
                     }
                 }
 

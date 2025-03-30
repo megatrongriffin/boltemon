@@ -238,7 +238,7 @@
 
                     if (pad1.left || pad1.right || pad1.up || pad1.down || pad1.A || pad1.B || pad1.X) {
                         if (!this.pad1ReadyTimer) {
-                            this.pad ?1ReadyText.setVisible(true);
+                            this.pad1ReadyText.setVisible(true); // Fixed typo here
                             this.pad1ReadyTimer = this.time.delayedCall(2000, () => {
                                 this.pad1ReadyText.setVisible(false);
                                 this.pad1ReadyTimer = null;

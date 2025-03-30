@@ -109,6 +109,9 @@
                 // Background
                 this.add.rectangle(this.game.config.width / 2, this.game.config.height / 2, this.game.config.width, this.game.config.height, 0x000000);
 
+                // Instruction for controller activation
+                this.add.text(this.game.config.width / 2, 50, 'Press any controller button to activate', { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
+
                 // Controller 1 Display
                 const pad1Container = this.add.container(300, this.game.config.height / 2 - 50);
                 const pad1Bg = this.add.rectangle(0, 0, 250, 150, 0x666666);
@@ -303,6 +306,11 @@
                     }
                 }
 
+                // Set floors to allow jumping through from below
+                this.floors.getChildren().forEach(floor => {
+                    floor.body.checkCollision.up = false;
+                });
+
                 // Animations
                 this.anims.create({
                     key: 'pikachu_stand',
@@ -378,6 +386,10 @@
             update() {
                 const pad1 = this.input.gamepad && this.input.gamepad.pad1;
                 const pad2 = this.input.gamepad && this.input.gamepad.pad2;
+
+                // Debug controller detection
+                if (pad1) console.log('Pad1 connected');
+                if (pad2) console.log('Pad2 connected');
 
                 // Player 1 controls
                 const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && pad1.left);
@@ -595,6 +607,7 @@
                 this.rematchText.on('pointerover', () => { this.rematchText.setStyle({ color: '#ff0000' }); this.sound.play('select'); });
                 this.rematchText.on('pointerout', () => this.rematchText.setStyle({ color: '#ff0000' }));
                 this.rematchText.on('pointerdown', () => this.scene.restart());
+
                 this.exitText.setInteractive();
                 this.exitText.on('pointerover', () => { this.exitText.setStyle({ color: '#ff0000' }); this.sound.play('select'); });
                 this.exitText.on('pointerout', () => this.exitText.setStyle({ color: '#ffffff' }));

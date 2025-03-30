@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Battle Mode Game</title>
+    <link rel="icon" href="data:,"> <!-- Prevents favicon 404 error -->
     <style>
         /* Scoped styles to prevent interference from other stylesheets */
         body#game-body {
@@ -43,27 +44,32 @@
                 this.player1Pad = null;
                 this.player2Pad = null;
 
-                this.input.gamepad.on('down', (pad, button, index) => {
-                    if (!this.player1Pad) {
-                        this.player1Pad = pad;
-                        this.add.text(this.game.config.width / 2, this.game.config.height / 2, 'Player 1 Controller Detected', {
-                            fontSize: '24px',
-                            color: '#00ff00'
-                        }).setOrigin(0.5);
-                    } else if (!this.player2Pad && pad !== this.player1Pad) {
-                        this.player2Pad = pad;
-                        this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'Player 2 Controller Detected', {
-                            fontSize: '24px',
-                            color: '#00ff00'
-                        }).setOrigin(0.5);
-                    }
+                // Check if gamepad plugin is available before attaching events
+                if (this.input.gamepad) {
+                    this.input.gamepad.on('down', (pad, button, index) => {
+                        if (!this.player1Pad) {
+                            this.player1Pad = pad;
+                            this.add.text(this.game.config.width / 2, this.game.config.height / 2, 'Player 1 Controller Detected', {
+                                fontSize: '24px',
+                                color: '#00ff00'
+                            }).setOrigin(0.5);
+                        } else if (!this.player2Pad && pad !== this.player1Pad) {
+                            this.player2Pad = pad;
+                            this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'Player 2 Controller Detected', {
+                                fontSize: '24px',
+                                color: '#00ff00'
+                            }).setOrigin(0.5);
+                        }
 
-                    if (this.player1Pad && this.player2Pad) {
-                        this.time.delayedCall(1000, () => {
-                            this.scene.start('StartScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
-                        });
-                    }
-                });
+                        if (this.player1Pad && this.player2Pad) {
+                            this.time.delayedCall(1000, () => {
+                                this.scene.start('StartScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
+                            });
+                        }
+                    });
+                } else {
+                    console.warn('Gamepad plugin not available');
+                }
 
                 this.add.text(this.game.config.width / 2, this.game.config.height - 50, 'Press SPACE to continue with keyboard', {
                     fontSize: '20px',
@@ -232,7 +238,7 @@
 
                     if (pad1.left || pad1.right || pad1.up || pad1.down || pad1.A || pad1.B || pad1.X) {
                         if (!this.pad1ReadyTimer) {
-                            this.pad1ReadyText.setVisible(true);
+                            this.pad ?1ReadyText.setVisible(true);
                             this.pad1ReadyTimer = this.time.delayedCall(2000, () => {
                                 this.pad1ReadyText.setVisible(false);
                                 this.pad1ReadyTimer = null;
@@ -666,6 +672,9 @@
                     gravity: { y: 300 },
                     debug: false
                 }
+            },
+            input: {
+                gamepad: true // Enable gamepad plugin
             },
             scene: [ControllerDetectionScene, StartScene, OptionsScene, BattleScene]
         };

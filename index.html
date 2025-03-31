@@ -5,7 +5,6 @@
     <title>Battle Mode Game</title>
     <link rel="icon" href="data:,"> <!-- Prevents favicon 404 error -->
     <style>
-        /* Scoped styles to prevent interference from other stylesheets */
         body#game-body {
             margin: 0;
             padding: 0;
@@ -43,34 +42,36 @@
 
                 this.player1Pad = null;
                 this.player2Pad = null;
+                this.controllersDetected = false;
 
                 if (this.input.gamepad) {
-                    this.input.gamepad.on('down', (pad, button, index) => {
+                    this.input.gamepad.on('down', (pad, button) => {
                         if (!this.player1Pad) {
                             this.player1Pad = pad;
                             this.add.text(this.game.config.width / 2, this.game.config.height / 2, 'Player 1 Controller Detected', {
                                 fontSize: '24px',
                                 color: '#00ff00'
                             }).setOrigin(0.5);
+                            this.controllersDetected = true;
                         } else if (!this.player2Pad && pad !== this.player1Pad) {
                             this.player2Pad = pad;
                             this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'Player 2 Controller Detected', {
                                 fontSize: '24px',
                                 color: '#00ff00'
                             }).setOrigin(0.5);
+                            this.controllersDetected = true;
                         }
 
-                        if (this.player1Pad && this.player2Pad) {
-                            this.time.delayedCall(1000, () => {
-                                this.scene.start('StartScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
-                            });
+                        // Allow Start button to proceed if at least one controller is detected
+                        if (button.index === 9 && this.controllersDetected) {
+                            this.scene.start('StartScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
                         }
                     });
                 } else {
                     console.warn('Gamepad plugin not available');
                 }
 
-                this.add.text(this.game.config.width / 2, this.game.config.height - 50, 'Press SPACE to continue with keyboard', {
+                this.add.text(this.game.config.width / 2, this.game.config.height - 50, 'Press SPACE or START to continue', {
                     fontSize: '20px',
                     color: '#ffffff'
                 }).setOrigin(0.5);
@@ -125,29 +126,69 @@
                 const scale = this.game.config.height / bg.height;
                 bg.setScale(scale);
 
-                const battleText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 50, 'BATTLE MODE', {
+                this.battleText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 - 50, 'BATTLE MODE', {
                     fontSize: '32px',
                     color: '#ffffff'
                 }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
-                battleText.setInteractive();
-                battleText.on('pointerover', () => battleText.setStyle({ color: '#ff0000' }));
-                battleText.on('pointerout', () => battleText.setStyle({ color: '#ffffff' }));
-                battleText.on('pointerdown', () => {
+                this.battleText.setInteractive();
+                this.battleText.on('pointerover', () => this.battleText.setStyle({ color: '#ff0000' }));
+                this.battleText.on('pointerout', () => this.battleText.setStyle({ color: '#ffffff' }));
+                this.battleText.on('pointerdown', () => {
                     this.sound.play('select');
                     this.scene.start('BattleScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
                 });
 
-                const controllersText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'CONTROLLERS', {
+                this.controllersText = this.add.text(this.game.config.width / 2, this.game.config.height / 2 + 50, 'CONTROLLERS', {
                     fontSize: '32px',
                     color: '#ffffff'
                 }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
-                controllersText.setInteractive();
-                controllersText.on('pointerover', () => controllersText.setStyle({ color: '#ff0000' }));
-                controllersText.on('pointerout', () => controllersText.setStyle({ color: '#ffffff' }));
-                controllersText.on('pointerdown', () => {
+                this.controllersText.setInteractive();
+                this.controllersText.on('pointerover', () => this.controllersText.setStyle({ color: '#ff0000' }));
+                this.controllersText.on('pointerout', () => this.controllersText.setStyle({ color: '#ffffff' }));
+                this.controllersText.on('pointerdown', () => {
                     this.sound.play('select');
                     this.scene.start('OptionsScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
                 });
+
+                // Add reticle
+                this.selection = 0; // 0 = Battle, 1 = Controllers
+                this.reticle = this.add.rectangle(this.battleText.x, this.battleText.y, this.battleText.width + 20, this.battleText.height + 20, 0xffffff, 0).setStrokeStyle(2, 0xff0000);
+                this.prevPadButtonStates = new Array(16).fill(false);
+                this.prevUp = false;
+                this.prevDown = false;
+            }
+
+            update() {
+                const pad = this.player1Pad || this.player2Pad;
+                if (pad) {
+                    const currentButtonStates = pad.buttons.map(btn => btn.pressed);
+                    const up = currentButtonStates[12] || (pad.axes.length > 1 && pad.axes[1] < -0.1);
+                    const down = currentButtonStates[13] || (pad.axes.length > 1 && pad.axes[1] > 0.1);
+                    const select = (currentButtonStates[0] && !this.prevPadButtonStates[0]) || (currentButtonStates[2] && !this.prevPadButtonStates[2]); // A or X
+
+                    if (up && !this.prevUp) {
+                        this.selection = 0;
+                        this.reticle.setPosition(this.battleText.x, this.battleText.y);
+                        this.reticle.setSize(this.battleText.width + 20, this.battleText.height + 20);
+                    }
+                    if (down && !this.prevDown) {
+                        this.selection = 1;
+                        this.reticle.setPosition(this.controllersText.x, this.controllersText.y);
+                        this.reticle.setSize(this.controllersText.width + 20, this.controllersText.height + 20);
+                    }
+                    if (select) {
+                        this.sound.play('select');
+                        if (this.selection === 0) {
+                            this.scene.start('BattleScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
+                        } else {
+                            this.scene.start('OptionsScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
+                        }
+                    }
+
+                    this.prevUp = up;
+                    this.prevDown = down;
+                    this.prevPadButtonStates = currentButtonStates;
+                }
             }
         }
 
@@ -167,37 +208,53 @@
 
                 this.add.text(this.game.config.width / 2, 50, 'Press any controller button to activate', { fontSize: '20px', color: '#ffffff' }).setOrigin(0.5);
 
-                const pad1Container = this.add.container(300, this.game.config.height / 2 - 50);
-                const pad1Bg = this.add.rectangle(0, 0, 250, 150, 0x666666);
+                // Player 1 Controller Layout (Xbox 360 style)
+                const pad1Container = this.add.container(300, this.game.config.height / 2);
+                const pad1Bg = this.add.rectangle(0, 0, 300, 200, 0x666666);
                 pad1Container.add(pad1Bg);
-                const pad1Left = this.add.rectangle(-80, 0, 30, 30, 0xffffff);
-                const pad1Right = this.add.rectangle(-20, 0, 30, 30, 0xffffff);
-                const pad1Up = this.add.rectangle(-50, -30, 30, 30, 0xffffff);
-                const pad1Down = this.add.rectangle(-50, 30, 30, 30, 0xffffff);
-                pad1Container.add([pad1Left, pad1Right, pad1Up, pad1Down]);
-                const pad1Jump = this.add.circle(50, -30, 15, 0xff0000);
-                const pad1Attack = this.add.circle(80, 0, 15, 0x00ff00);
-                const pad1Run = this.add.circle(50, 30, 15, 0x0000ff);
-                pad1Container.add([pad1Jump, pad1Attack, pad1Run]);
+                // D-pad
+                const pad1Left = this.add.rectangle(-100, 0, 30, 30, 0xffffff);
+                const pad1Right = this.add.rectangle(-40, 0, 30, 30, 0xffffff);
+                const pad1Up = this.add.rectangle(-70, -30, 30, 30, 0xffffff);
+                const pad1Down = this.add.rectangle(-70, 30, 30, 30, 0xffffff);
+                // Face Buttons
+                const pad1A = this.add.circle(70, 30, 15, 0x00ff00); // Green
+                const pad1B = this.add.circle(100, 0, 15, 0xff0000); // Red
+                const pad1X = this.add.circle(40, 0, 15, 0x0000ff); // Blue
+                const pad1Y = this.add.circle(70, -30, 15, 0xffff00); // Yellow
+                // Shoulder Buttons
+                const pad1L1 = this.add.rectangle(-100, -60, 40, 20, 0xffffff);
+                const pad1R1 = this.add.rectangle(100, -60, 40, 20, 0xffffff);
+                const pad1L2 = this.add.rectangle(-100, -90, 40, 20, 0xcccccc);
+                const pad1R2 = this.add.rectangle(100, -90, 40, 20, 0xcccccc);
+                // Center Buttons
+                const pad1Start = this.add.circle(0, -30, 10, 0xaaaaaa);
+                const pad1Back = this.add.circle(-30, -30, 10, 0xaaaaaa);
+                pad1Container.add([pad1Left, pad1Right, pad1Up, pad1Down, pad1A, pad1B, pad1X, pad1Y, pad1L1, pad1R1, pad1L2, pad1R2, pad1Start, pad1Back]);
                 const pad1Text = this.add.text(300, this.game.config.height / 2 - 150, 'Player 1', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
-                const pad1ReadyText = this.add.text(300, this.game.config.height / 2 - 100, 'Player 1 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
-                pad1ReadyText.setVisible(false);
+                const pad1ReadyText = this.add.text(300, this.game.config.height / 2 - 100, 'Player 1 Ready', { fontSize: '20px', color: '#00ff00' }).setVisible(false).setOrigin(0.5);
 
-                const pad2Container = this.add.container(916, this.game.config.height / 2 - 50);
-                const pad2Bg = this.add.rectangle(0, 0, 250, 150, 0x666666);
+                // Player 2 Controller Layout
+                const pad2Container = this.add.container(916, this.game.config.height / 2);
+                const pad2Bg = this.add.rectangle(0, 0, 300, 200, 0x666666);
                 pad2Container.add(pad2Bg);
-                const pad2Left = this.add.rectangle(-80, 0, 30, 30, 0xffffff);
-                const pad2Right = this.add.rectangle(-20, 0, 30, 30, 0xffffff);
-                const pad2Up = this.add.rectangle(-50, -30, 30, 30, 0xffffff);
-                const pad2Down = this.add.rectangle(-50, 30, 30, 30, 0xffffff);
-                pad2Container.add([pad2Left, pad2Right, pad2Up, pad2Down]);
-                const pad2Jump = this.add.circle(50, -30, 15, 0xff0000);
-                const pad2Attack = this.add.circle(80, 0, 15, 0x00ff00);
-                const pad2Run = this.add.circle(50, 30, 15, 0x0000ff);
-                pad2Container.add([pad2Jump, pad2Attack, pad2Run]);
+                const pad2Left = this.add.rectangle(-100, 0, 30, 30, 0xffffff);
+                const pad2Right = this.add.rectangle(-40, 0, 30, 30, 0xffffff);
+                const pad2Up = this.add.rectangle(-70, -30, 30, 30, 0xffffff);
+                const pad2Down = this.add.rectangle(-70, 30, 30, 30, 0xffffff);
+                const pad2A = this.add.circle(70, 30, 15, 0x00ff00);
+                const pad2B = this.add.circle(100, 0, 15, 0xff0000);
+                const pad2X = this.add.circle(40, 0, 15, 0x0000ff);
+                const pad2Y = this.add.circle(70, -30, 15, 0xffff00);
+                const pad2L1 = this.add.rectangle(-100, -60, 40, 20, 0xffffff);
+                const pad2R1 = this.add.rectangle(100, -60, 40, 20, 0xffffff);
+                const pad2L2 = this.add.rectangle(-100, -90, 40, 20, 0xcccccc);
+                const pad2R2 = this.add.rectangle(100, -90, 40, 20, 0xcccccc);
+                const pad2Start = this.add.circle(0, -30, 10, 0xaaaaaa);
+                const pad2Back = this.add.circle(-30, -30, 10, 0xaaaaaa);
+                pad2Container.add([pad2Left, pad2Right, pad2Up, pad2Down, pad2A, pad2B, pad2X, pad2Y, pad2L1, pad2R1, pad2L2, pad2R2, pad2Start, pad2Back]);
                 const pad2Text = this.add.text(916, this.game.config.height / 2 - 150, 'Player 2', { fontSize: '24px', color: '#ffffff' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
-                const pad2ReadyText = this.add.text(916, this.game.config.height / 2 - 100, 'Player 2 Ready', { fontSize: '20px', color: '#00ff00' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
-                pad2ReadyText.setVisible(false);
+                const pad2ReadyText = this.add.text(916, this.game.config.height / 2 - 100, 'Player 2 Ready', { fontSize: '20px', color: '#00ff00' }).setVisible(false).setOrigin(0.5);
 
                 const backText = this.add.text(this.game.config.width / 2, this.game.config.height - 50, 'Back', {
                     fontSize: '32px',
@@ -211,8 +268,8 @@
                     this.scene.start('StartScene', { player1Pad: this.player1Pad, player2Pad: this.player2Pad });
                 });
 
-                this.pad1Controls = { left: pad1Left, right: pad1Right, up: pad1Up, down: pad1Down, jump: pad1Jump, attack: pad1Attack, run: pad1Run };
-                this.pad2Controls = { left: pad2Left, right: pad2Right, up: pad2Up, down: pad2Down, jump: pad2Jump, attack: pad2Attack, run: pad2Run };
+                this.pad1Controls = { left: pad1Left, right: pad1Right, up: pad1Up, down: pad1Down, A: pad1A, B: pad1B, X: pad1X, Y: pad1Y, L1: pad1L1, R1: pad1R1, L2: pad1L2, R2: pad1R2, start: pad1Start, back: pad1Back };
+                this.pad2Controls = { left: pad2Left, right: pad2Right, up: pad2Up, down: pad2Down, A: pad2A, B: pad2B, X: pad2X, Y: pad2Y, L1: pad2L1, R1: pad2R1, L2: pad2L2, R2: pad2R2, start: pad2Start, back: pad2Back };
                 this.pad1ReadyText = pad1ReadyText;
                 this.pad2ReadyText = pad2ReadyText;
                 this.pad1ReadyTimer = null;
@@ -220,22 +277,57 @@
             }
 
             update() {
-                const pad1 = this.input.gamepad && this.input.gamepad.pad1;
-                const pad2 = this.input.gamepad && this.input.gamepad.pad2;
+                const pad1 = this.player1Pad;
+                const pad2 = this.player2Pad;
 
-                Object.values(this.pad1Controls).forEach(btn => btn.fillColor = btn === this.pad1Controls.jump ? 0xff0000 : btn === this.pad1Controls.attack ? 0x00ff00 : btn === this.pad1Controls.run ? 0x0000ff : 0xffffff);
-                Object.values(this.pad2Controls).forEach(btn => btn.fillColor = btn === this.pad2Controls.jump ? 0xff0000 : btn === this.pad2Controls.attack ? 0x00ff00 : btn === this.pad2Controls.run ? 0x0000ff : 0xffffff);
+                // Reset colors
+                this.pad1Controls.left.fillColor = 0xffffff;
+                this.pad1Controls.right.fillColor = 0xffffff;
+                this.pad1Controls.up.fillColor = 0xffffff;
+                this.pad1Controls.down.fillColor = 0xffffff;
+                this.pad1Controls.A.fillColor = 0x00ff00;
+                this.pad1Controls.B.fillColor = 0xff0000;
+                this.pad1Controls.X.fillColor = 0x0000ff;
+                this.pad1Controls.Y.fillColor = 0xffff00;
+                this.pad1Controls.L1.fillColor = 0xffffff;
+                this.pad1Controls.R1.fillColor = 0xffffff;
+                this.pad1Controls.L2.fillColor = 0xcccccc;
+                this.pad1Controls.R2.fillColor = 0xcccccc;
+                this.pad1Controls.start.fillColor = 0xaaaaaa;
+                this.pad1Controls.back.fillColor = 0xaaaaaa;
+
+                this.pad2Controls.left.fillColor = 0xffffff;
+                this.pad2Controls.right.fillColor = 0xffffff;
+                this.pad2Controls.up.fillColor = 0xffffff;
+                this.pad2Controls.down.fillColor = 0xffffff;
+                this.pad2Controls.A.fillColor = 0x00ff00;
+                this.pad2Controls.B.fillColor = 0xff0000;
+                this.pad2Controls.X.fillColor = 0x0000ff;
+                this.pad2Controls.Y.fillColor = 0xffff00;
+                this.pad2Controls.L1.fillColor = 0xffffff;
+                this.pad2Controls.R1.fillColor = 0xffffff;
+                this.pad2Controls.L2.fillColor = 0xcccccc;
+                this.pad2Controls.R2.fillColor = 0xcccccc;
+                this.pad2Controls.start.fillColor = 0xaaaaaa;
+                this.pad2Controls.back.fillColor = 0xaaaaaa;
 
                 if (pad1) {
-                    if (pad1.left) this.pad1Controls.left.fillColor = 0xffff00;
-                    if (pad1.right) this.pad1Controls.right.fillColor = 0xffff00;
-                    if (pad1.up) this.pad1Controls.up.fillColor = 0xffff00;
-                    if (pad1.down) this.pad1Controls.down.fillColor = 0xffff00;
-                    if (pad1.A) this.pad1Controls.jump.fillColor = 0xffff00;
-                    if (pad1.B) this.pad1Controls.attack.fillColor = 0xffff00;
-                    if (pad1.X) this.pad1Controls.run.fillColor = 0xffff00;
+                    if (pad1.buttons[14].pressed) this.pad1Controls.left.fillColor = 0xffff00;
+                    if (pad1.buttons[15].pressed) this.pad1Controls.right.fillColor = 0xffff00;
+                    if (pad1.buttons[12].pressed) this.pad1Controls.up.fillColor = 0xffff00;
+                    if (pad1.buttons[13].pressed) this.pad1Controls.down.fillColor = 0xffff00;
+                    if (pad1.buttons[0].pressed) this.pad1Controls.A.fillColor = 0xffff00;
+                    if (pad1.buttons[1].pressed) this.pad1Controls.B.fillColor = 0xffff00;
+                    if (pad1.buttons[2].pressed) this.pad1Controls.X.fillColor = 0xffff00;
+                    if (pad1.buttons[3].pressed) this.pad1Controls.Y.fillColor = 0xffff00;
+                    if (pad1.buttons[4].pressed) this.pad1Controls.L1.fillColor = 0xffff00;
+                    if (pad1.buttons[5].pressed) this.pad1Controls.R1.fillColor = 0xffff00;
+                    if (pad1.buttons[6].pressed) this.pad1Controls.L2.fillColor = 0xffff00;
+                    if (pad1.buttons[7].pressed) this.pad1Controls.R2.fillColor = 0xffff00;
+                    if (pad1.buttons[9].pressed) this.pad1Controls.start.fillColor = 0xffff00;
+                    if (pad1.buttons[8].pressed) this.pad1Controls.back.fillColor = 0xffff00;
 
-                    if (pad1.left || pad1.right || pad1.up || pad1.down || pad1.A || pad1.B || pad1.X) {
+                    if (pad1.buttons.some(btn => btn.pressed)) {
                         if (!this.pad1ReadyTimer) {
                             this.pad1ReadyText.setVisible(true);
                             this.pad1ReadyTimer = this.time.delayedCall(2000, () => {
@@ -247,15 +339,22 @@
                 }
 
                 if (pad2) {
-                    if (pad2.left) this.pad2Controls.left.fillColor = 0xffff00;
-                    if (pad2.right) this.pad2Controls.right.fillColor = 0xffff00;
-                    if (pad2.up) this.pad2Controls.up.fillColor = 0xffff00;
-                    if (pad2.down) this.pad2Controls.down.fillColor = 0xffff00;
-                    if (pad2.A) this.pad2Controls.jump.fillColor = 0xffff00;
-                    if (pad2.B) this.pad2Controls.attack.fillColor = 0xffff00;
-                    if (pad2.X) this.pad2Controls.run.fillColor = 0xffff00;
+                    if (pad2.buttons[14].pressed) this.pad2Controls.left.fillColor = 0xffff00;
+                    if (pad2.buttons[15].pressed) this.pad2Controls.right.fillColor = 0xffff00;
+                    if (pad2.buttons[12].pressed) this.pad2Controls.up.fillColor = 0xffff00;
+                    if (pad2.buttons[13].pressed) this.pad2Controls.down.fillColor = 0xffff00;
+                    if (pad2.buttons[0].pressed) this.pad2Controls.A.fillColor = 0xffff00;
+                    if (pad2.buttons[1].pressed) this.pad2Controls.B.fillColor = 0xffff00;
+                    if (pad2.buttons[2].pressed) this.pad2Controls.X.fillColor = 0xffff00;
+                    if (pad2.buttons[3].pressed) this.pad2Controls.Y.fillColor = 0xffff00;
+                    if (pad2.buttons[4].pressed) this.pad2Controls.L1.fillColor = 0xffff00;
+                    if (pad2.buttons[5].pressed) this.pad2Controls.R1.fillColor = 0xffff00;
+                    if (pad2.buttons[6].pressed) this.pad2Controls.L2.fillColor = 0xffff00;
+                    if (pad2.buttons[7].pressed) this.pad2Controls.R2.fillColor = 0xffff00;
+                    if (pad2.buttons[9].pressed) this.pad2Controls.start.fillColor = 0xffff00;
+                    if (pad2.buttons[8].pressed) this.pad2Controls.back.fillColor = 0xffff00;
 
-                    if (pad2.left || pad2.right || pad2.up || pad2.down || pad2.A || pad2.B || pad2.X) {
+                    if (pad2.buttons.some(btn => btn.pressed)) {
                         if (!this.pad2ReadyTimer) {
                             this.pad2ReadyText.setVisible(true);
                             this.pad2ReadyTimer = this.time.delayedCall(2000, () => {
@@ -282,20 +381,19 @@
             create() {
                 this.add.image(0, 0, 'battlebg').setOrigin(0, 0).setDisplaySize(this.game.config.width, this.game.config.height);
 
-                // Updated grid with 12 rows (height 768px) and more blank rows for better traversability
                 const grid = [
-                    'F@@@1@5@@@@6@@@2@@F', // Row 0
-                    'F@Q@@@@@@@@@@@@@Q@F', // Row 1
-                    'FFF@@@@@@@@@@@@@FFF', // Row 2
-                    'F@@@@@@@@@@@@@@@@@F', // Row 3
-                    'F@@@@@@@A@F@@@@@@@F', // Row 4
-                    'F@@@@@DFFFFFG@@@@@F', // Row 5
-                    'F@@@@@F@@@@@F@@@@@F', // Row 6
-                    'F@@@@@F@@.@@F@@@@@F', // Row 7
-                    'FFG@@@@@@@@@@@@@DFF', // Row 8 
-                    'F@@@@@DFF@FFG@@@@@F', // Row 9
-                    'F@@@@@F@@@@@F@@@@@F', // Row 10
-                    'FFFFFFFFFFFFFFFFFFF'  // Row 11 - Ground
+                    'F@@@1@5@@@@6@@@2@@F',
+                    'F@Q@@@@@@@@@@@@@Q@F',
+                    'FFF@@@@@@@@@@@@@FFF',
+                    'F@@@@@@@@@@@@@@@@@F',
+                    'F@@@@@@@A@F@@@@@@@F',
+                    'F@@@@@DFFFFFG@@@@@F',
+                    'F@@@@@F@@@@@F@@@@@F',
+                    'F@@@@@F@@.@@F@@@@@F',
+                    'FFG@@@@@@@@@@@@@DFF',
+                    'F@@@@@DFF@FFG@@@@@F',
+                    'F@@@@@F@@@@@F@@@@@F',
+                    'FFFFFFFFFFFFFFFFFFF'
                 ];
 
                 this.floors = this.physics.add.staticGroup();
@@ -353,7 +451,6 @@
                     }
                 }
 
-                // Fix floor collision: solid from above, pass-through from below
                 this.floors.getChildren().forEach(floor => {
                     floor.body.checkCollision.up = true;
                     floor.body.checkCollision.down = false;
@@ -361,7 +458,6 @@
                     floor.body.checkCollision.right = true;
                 });
 
-                // Debug gamepad detection
                 console.log('Player 1 Pad:', this.player1Pad);
                 console.log('Player 2 Pad:', this.player2Pad);
 
@@ -433,12 +529,10 @@
                 this.player1.play('pikachu_stand');
                 this.player2.play('eevee_stand');
 
-                // Initialize previous button states for both controllers
                 this.prevPad1ButtonStates = new Array(16).fill(false);
                 this.prevPad2ButtonStates = new Array(16).fill(false);
             }
 
-            // Helper function to detect if a button was just pressed
             isButtonJustPressed(pad, index, prevStates) {
                 if (!pad || index >= pad.buttons.length) return false;
                 const current = pad.buttons[index].pressed;
@@ -450,26 +544,35 @@
                 const pad1 = this.player1Pad;
                 const pad2 = this.player2Pad;
 
-                // Player 1 inputs with controller support
-                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1.buttons[14].pressed || (pad1.axes.length > 0 && pad1.axes[0] < -0.5)));
-                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1.buttons[15].pressed || (pad1.axes.length > 0 && pad1.axes[0] > 0.5)));
-                const jump1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('Z')) || this.isButtonJustPressed(pad1, 0, this.prevPad1ButtonStates); // Button 0 = A
-                const attack1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('X')) || this.isButtonJustPressed(pad1, 1, this.prevPad1ButtonStates); // Button 1 = B
-                const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1.buttons[2].pressed); // Button 2 = X
+                // Update previous states first
+                const pad1CurrentStates = pad1 ? pad1.buttons.map(btn => btn.pressed) : new Array(16).fill(false);
+                const pad2CurrentStates = pad2 ? pad2.buttons.map(btn => btn.pressed) : new Array(16).fill(false);
 
-                // Player 2 inputs with controller support
-                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2.buttons[14].pressed || (pad2.axes.length > 0 && pad2.axes[0] < -0.5)));
-                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2.buttons[15].pressed || (pad2.axes.length > 0 && pad2.axes[0] > 0.5)));
-                const jump2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('B')) || this.isButtonJustPressed(pad2, 0, this.prevPad2ButtonStates); // Button 0 = A
-                const attack2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('N')) || this.isButtonJustPressed(pad2, 1, this.prevPad2ButtonStates); // Button 1 = B
-                const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2.buttons[2].pressed); // Button 2 = X
+                // Player 1 inputs
+                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1CurrentStates[14] || (pad1.axes.length > 0 && pad1.axes[0] < -0.1)));
+                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1CurrentStates[15] || (pad1.axes.length > 0 && pad1.axes[0] > 0.1)));
+                const jump1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('Z')) || (pad1 && pad1CurrentStates[0] && !this.prevPad1ButtonStates[0]);
+                const attack1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('X')) || (pad1 && pad1CurrentStates[1] && !this.prevPad1ButtonStates[1]);
+                const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1CurrentStates[2]);
 
-                // Pause with start button (Button 9)
-                if (this.isButtonJustPressed(pad1, 9, this.prevPad1ButtonStates) || this.isButtonJustPressed(pad2, 9, this.prevPad2ButtonStates)) {
+                // Player 2 inputs
+                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2CurrentStates[14] || (pad2.axes.length > 0 && pad2.axes[0] < -0.1)));
+                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2CurrentStates[15] || (pad2.axes.length > 0 && pad2.axes[0] > 0.1)));
+                const jump2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('B')) || (pad2 && pad2CurrentStates[0] && !this.prevPad2ButtonStates[0]);
+                const attack2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('N')) || (pad2 && pad2CurrentStates[1] && !this.prevPad2ButtonStates[1]);
+                const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2CurrentStates[2]);
+
+                // Pause with Start button
+                if ((pad1 && pad1CurrentStates[9] && !this.prevPad1ButtonStates[9]) || (pad2 && pad2CurrentStates[9] && !this.prevPad2ButtonStates[9])) {
                     this.toggleHelp();
                 }
 
-                // Update player 1 controls
+                // Debug inputs
+                if (pad1) {
+                    console.log('P1 Left:', pad1CurrentStates[14], 'Axis:', pad1.axes[0], 'Jump:', pad1CurrentStates[0]);
+                }
+
+                // Player 1 controls
                 if (!this.player1.stunned) {
                     if (left1) {
                         this.player1.setVelocityX(run1 ? -320 : -160);
@@ -498,7 +601,7 @@
                     }
                 }
 
-                // Update player 2 controls
+                // Player 2 controls
                 if (!this.player2.stunned) {
                     if (left2) {
                         this.player2.setVelocityX(run2 ? -320 : -160);
@@ -530,21 +633,12 @@
                     }
                 }
 
-                // Update animations when in air
                 if (!this.player1.body.onFloor() && !this.player1.isAttacking) this.player1.play('pikachu_jump', true);
                 if (!this.player2.body.onFloor() && !this.player2.isAttacking) this.player2.play('eevee_stand', true);
 
-                // Update previous button states for next frame
-                if (pad1) {
-                    pad1.buttons.forEach((btn, index) => {
-                        this.prevPad1ButtonStates[index] = btn.pressed;
-                    });
-                }
-                if (pad2) {
-                    pad2.buttons.forEach((btn, index) => {
-                        this.prevPad2ButtonStates[index] = btn.pressed;
-                    });
-                }
+                // Update previous states
+                this.prevPad1ButtonStates = pad1CurrentStates;
+                this.prevPad2ButtonStates = pad2CurrentStates;
             }
 
             checkAttack(attacker, defender) {
@@ -713,7 +807,7 @@
         const config = {
             type: Phaser.AUTO,
             width: 1216,
-            height: 768, // Increased to 12 rows (12 * 64)
+            height: 768,
             parent: 'game-container',
             scale: {
                 mode: Phaser.Scale.FIT,
@@ -727,7 +821,7 @@
                 }
             },
             input: {
-                gamepad: true // Enable gamepad plugin
+                gamepad: true
             },
             scene: [ControllerDetectionScene, StartScene, OptionsScene, BattleScene]
         };

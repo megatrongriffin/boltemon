@@ -420,7 +420,7 @@
                 this.helpScreen = this.add.group();
                 const helpBg = this.add.rectangle(this.game.config.width / 2, this.game.config.height / 2, this.game.config.width, this.game.config.height, 0x000000, 0.8);
                 const helpText = this.add.text(this.game.config.width / 2, this.game.config.height / 2,
-                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad/Analog - Move\nA - Jump\nB - Attack\nX - Run',
+                    'Controls:\nPlayer 1:\nWASD - Move\nZ - Jump\nX - Attack\nC - Run\n\nPlayer 2:\nArrows - Move\nB - Jump\nN - Attack\nM - Run\n\nController:\nD-pad/Analog - Move\nA - Jump\nB - Attack\nX - Run\nStart - Pause',
                     { fontSize: '24px', color: '#ffffff', align: 'center' }).setOrigin(0.5).setShadow(2, 2, '#000000', 2, true, true);
                 this.helpScreen.addMultiple([helpBg, helpText]);
                 this.helpScreen.setVisible(false);
@@ -432,31 +432,44 @@
 
                 this.player1.play('pikachu_stand');
                 this.player2.play('eevee_stand');
+
+                // Initialize previous button states for both controllers
+                this.prevPad1ButtonStates = new Array(16).fill(false);
+                this.prevPad2ButtonStates = new Array(16).fill(false);
+            }
+
+            // Helper function to detect if a button was just pressed
+            isButtonJustPressed(pad, index, prevStates) {
+                if (!pad || index >= pad.buttons.length) return false;
+                const current = pad.buttons[index].pressed;
+                const previous = prevStates[index];
+                return current && !previous;
             }
 
             update() {
                 const pad1 = this.player1Pad;
                 const pad2 = this.player2Pad;
 
-                // Enhanced controller support with D-pad and analog stick
-                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1.left || (pad1.axes.length > 0 && pad1.axes[0].getValue() < -0.5)));
-                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1.right || (pad1.axes.length > 0 && pad1.axes[0].getValue() > 0.5)));
-                const jump1 = this.input.keyboard.addKey('Z').isDown || (pad1 && pad1.A);
-                const attack1 = this.input.keyboard.addKey('X').isDown || (pad1 && pad1.B);
-                const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1.X);
+                // Player 1 inputs with controller support
+                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1.buttons[14].pressed || (pad1.axes.length > 0 && pad1.axes[0] < -0.5)));
+                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1.buttons[15].pressed || (pad1.axes.length > 0 && pad1.axes[0] > 0.5)));
+                const jump1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('Z')) || this.isButtonJustPressed(pad1, 0, this.prevPad1ButtonStates); // Button 0 = A
+                const attack1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('X')) || this.isButtonJustPressed(pad1, 1, this.prevPad1ButtonStates); // Button 1 = B
+                const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1.buttons[2].pressed); // Button 2 = X
 
-                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2.left || (pad2.axes.length > 0 && pad2.axes[0].getValue() < -0.5)));
-                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2.right || (pad2.axes.length > 0 && pad2.axes[0].getValue() > 0.5)));
-                const jump2 = this.input.keyboard.addKey('B').isDown || (pad2 && pad2.A);
-                const attack2 = this.input.keyboard.addKey('N').isDown || (pad2 && pad2.B);
-                const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2.X);
+                // Player 2 inputs with controller support
+                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2.buttons[14].pressed || (pad2.axes.length > 0 && pad2.axes[0] < -0.5)));
+                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2.buttons[15].pressed || (pad2.axes.length > 0 && pad2.axes[0] > 0.5)));
+                const jump2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('B')) || this.isButtonJustPressed(pad2, 0, this.prevPad2ButtonStates); // Button 0 = A
+                const attack2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('N')) || this.isButtonJustPressed(pad2, 1, this.prevPad2ButtonStates); // Button 1 = B
+                const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2.buttons[2].pressed); // Button 2 = X
 
-                if ((pad1 && pad1.start && !this.pad1StartPressed) || (pad2 && pad2.start && !this.pad2StartPressed)) {
+                // Pause with start button (Button 9)
+                if (this.isButtonJustPressed(pad1, 9, this.prevPad1ButtonStates) || this.isButtonJustPressed(pad2, 9, this.prevPad2ButtonStates)) {
                     this.toggleHelp();
                 }
-                this.pad1StartPressed = pad1 && pad1.start;
-                this.pad2StartPressed = pad2 && pad2.start;
 
+                // Update player 1 controls
                 if (!this.player1.stunned) {
                     if (left1) {
                         this.player1.setVelocityX(run1 ? -320 : -160);
@@ -472,7 +485,7 @@
                     }
 
                     if (jump1 && this.player1.body.onFloor()) {
-                        this.player1.setVelocityY(-450); // Increased jump height
+                        this.player1.setVelocityY(-450);
                         this.player1.play('pikachu_jump', true);
                         this.sound.play('jump');
                     }
@@ -485,6 +498,7 @@
                     }
                 }
 
+                // Update player 2 controls
                 if (!this.player2.stunned) {
                     if (left2) {
                         this.player2.setVelocityX(run2 ? -320 : -160);
@@ -500,7 +514,7 @@
                     }
 
                     if (jump2 && this.player2.body.onFloor()) {
-                        this.player2.setVelocityY(-450); // Increased jump height
+                        this.player2.setVelocityY(-450);
                         this.player2.play('eevee_stand', true);
                         this.sound.play('jump');
                     }
@@ -516,8 +530,21 @@
                     }
                 }
 
+                // Update animations when in air
                 if (!this.player1.body.onFloor() && !this.player1.isAttacking) this.player1.play('pikachu_jump', true);
                 if (!this.player2.body.onFloor() && !this.player2.isAttacking) this.player2.play('eevee_stand', true);
+
+                // Update previous button states for next frame
+                if (pad1) {
+                    pad1.buttons.forEach((btn, index) => {
+                        this.prevPad1ButtonStates[index] = btn.pressed;
+                    });
+                }
+                if (pad2) {
+                    pad2.buttons.forEach((btn, index) => {
+                        this.prevPad2ButtonStates[index] = btn.pressed;
+                    });
+                }
             }
 
             checkAttack(attacker, defender) {

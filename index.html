@@ -162,8 +162,8 @@
                 const pad = this.player1Pad || this.player2Pad;
                 if (pad) {
                     const currentButtonStates = pad.buttons.map(btn => btn.pressed);
-                    const up = currentButtonStates[12] || (pad.axes.length > 1 && pad.axes[1] < -0.1);
-                    const down = currentButtonStates[13] || (pad.axes.length > 1 && pad.axes[1] > 0.1);
+                    const up = currentButtonStates[12] || (pad.axes.length > 1 && pad.axes[1] < -0.05); // Adjusted threshold
+                    const down = currentButtonStates[13] || (pad.axes.length > 1 && pad.axes[1] > 0.05); // Adjusted threshold
                     const select = (currentButtonStates[0] && !this.prevPadButtonStates[0]) || (currentButtonStates[2] && !this.prevPadButtonStates[2]); // A or X
 
                     if (up && !this.prevUp) {
@@ -549,15 +549,15 @@
                 const pad2CurrentStates = pad2 ? pad2.buttons.map(btn => btn.pressed) : new Array(16).fill(false);
 
                 // Player 1 inputs
-                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1CurrentStates[14] || (pad1.axes.length > 0 && pad1.axes[0] < -0.1)));
-                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1CurrentStates[15] || (pad1.axes.length > 0 && pad1.axes[0] > 0.1)));
+                const left1 = this.input.keyboard.addKey('A').isDown || (pad1 && (pad1CurrentStates[14] || (pad1.axes.length > 0 && pad1.axes[0] < -0.05))); // Adjusted threshold
+                const right1 = this.input.keyboard.addKey('D').isDown || (pad1 && (pad1CurrentStates[15] || (pad1.axes.length > 0 && pad1.axes[0] > 0.05))); // Adjusted threshold
                 const jump1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('Z')) || (pad1 && pad1CurrentStates[0] && !this.prevPad1ButtonStates[0]);
                 const attack1 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('X')) || (pad1 && pad1CurrentStates[1] && !this.prevPad1ButtonStates[1]);
                 const run1 = this.input.keyboard.addKey('C').isDown || (pad1 && pad1CurrentStates[2]);
 
                 // Player 2 inputs
-                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2CurrentStates[14] || (pad2.axes.length > 0 && pad2.axes[0] < -0.1)));
-                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2CurrentStates[15] || (pad2.axes.length > 0 && pad2.axes[0] > 0.1)));
+                const left2 = this.input.keyboard.addKey('LEFT').isDown || (pad2 && (pad2CurrentStates[14] || (pad2.axes.length > 0 && pad2.axes[0] < -0.05))); // Adjusted threshold
+                const right2 = this.input.keyboard.addKey('RIGHT').isDown || (pad2 && (pad2CurrentStates[15] || (pad2.axes.length > 0 && pad2.axes[0] > 0.05))); // Adjusted threshold
                 const jump2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('B')) || (pad2 && pad2CurrentStates[0] && !this.prevPad2ButtonStates[0]);
                 const attack2 = Phaser.Input.Keyboard.JustDown(this.input.keyboard.addKey('N')) || (pad2 && pad2CurrentStates[1] && !this.prevPad2ButtonStates[1]);
                 const run2 = this.input.keyboard.addKey('M').isDown || (pad2 && pad2CurrentStates[2]);
@@ -569,7 +569,7 @@
 
                 // Debug inputs
                 if (pad1) {
-                    console.log('P1 Left:', pad1CurrentStates[14], 'Axis:', pad1.axes[0], 'Jump:', pad1CurrentStates[0]);
+                    console.log('P1 Left:', left1, 'Axis:', pad1.axes[0], 'Jump:', jump1);
                 }
 
                 // Player 1 controls
